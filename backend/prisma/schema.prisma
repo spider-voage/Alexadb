@@ -1,0 +1,396 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== USER & AUTH ====================
+model User {
+  id                String    @id @default(uuid())
+  email             String    @unique
+  password          String?
+  name              String?
+  avatar            String?
+  emailVerified     Boolean   @default(false)
+  emailVerifiedAt   DateTime?
+  twoFactorEnabled  Boolean   @default(false)
+  twoFactorSecret   String?
+  role              UserRole  @default(USER)
+  status            UserStatus @default(ACTIVE)
+
+  // OAuth
+  githubId          String?   @unique
+  googleId          String?   @unique
+
+  // Plan & Billing
+  plan              Plan      @default(FREE)
+  planExpiresAt     DateTime?
+  stripeCustomerId  String?
+  stripeSubscriptionId String?
+
+  // Timestamps
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  lastLoginAt       DateTime?
+
+  // Relations
+  projects          Project[]
+  sessions          Session[]
+  notifications     Notification[]
+  auditLogs         AuditLog[]
+  payments          Payment[]
+  apiKeys           ApiKey[]
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  type      SessionType @default(ACCESS)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+// ==================== PROJECTS ====================
+model Project {
+  id            String    @id @default(uuid())
+  name          String
+  slug          String    @unique
+  description   String?
+  status        ProjectStatus @default(IDLE)
+  framework     Framework @default(HTML)
+
+  // Source
+  sourceType    SourceType @default(GIT)
+  gitUrl        String?
+  gitBranch     String    @default("main")
+
+  // Build
+  buildCommand  String    @default("npm run build")
+  outputDir     String    @default("dist")
+  rootDir       String    @default("/")
+
+  // Resources
+  storageUsed   BigInt    @default(0)
+  bandwidthUsed BigInt    @default(0)
+
+  // Relations
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  deployments   Deployment[]
+  envVars       EnvVar[]
+  domains       Domain[]
+  files         File[]
+  analytics     Analytics[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("projects")
+}
+
+// ==================== DEPLOYMENTS ====================
+model Deployment {
+  id            String    @id @default(uuid())
+  projectId     String
+  project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  status        DeploymentStatus @default(PENDING)
+  commitMessage String?
+  commitSha     String?
+
+  // Build info
+  buildLog      String?
+  buildTime     Int?      // seconds
+  errorMessage  String?
+
+  // URLs
+  previewUrl    String?
+
+  createdAt     DateTime  @default(now())
+  completedAt   DateTime?
+
+  @@map("deployments")
+}
+
+// ==================== DOMAINS ====================
+model Domain {
+  id            String    @id @default(uuid())
+  projectId     String
+  project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  name          String
+  type          DomainType @default(SUBDOMAIN)
+  sslEnabled    Boolean   @default(true)
+  sslCert       String?
+  sslKey        String?
+  sslExpiresAt  DateTime?
+
+  // DNS
+  dnsRecords    Json?     // [{type, name, value, ttl}]
+
+  // Redirects
+  redirects     Json?     // [{from, to, status}]
+
+  verified      Boolean   @default(false)
+  verifiedAt    DateTime?
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([projectId, name])
+  @@map("domains")
+}
+
+// ==================== ENVIRONMENT VARIABLES ====================
+model EnvVar {
+  id        String   @id @default(uuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  key       String
+  value     String   // Encrypted at application level
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([projectId, key])
+  @@map("env_vars")
+}
+
+// ==================== FILES ====================
+model File {
+  id        String   @id @default(uuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  name      String
+  path      String
+  size      BigInt   @default(0)
+  mimeType  String?
+  content   String?  // For text files, stored encrypted
+  isFolder  Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([projectId, path])
+  @@map("files")
+}
+
+// ==================== ANALYTICS ====================
+model Analytics {
+  id          String   @id @default(uuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  date        DateTime @default(now())
+
+  // Metrics
+  visitors    Int      @default(0)
+  requests    Int      @default(0)
+  bandwidth   BigInt   @default(0)
+  cpuUsage    Float    @default(0)
+  ramUsage    Float    @default(0)
+  buildTime   Int      @default(0)
+  errorRate   Float    @default(0)
+
+  @@unique([projectId, date])
+  @@map("analytics")
+}
+
+// ==================== NOTIFICATIONS ====================
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title     String
+  message   String
+  type      NotificationType @default(INFO)
+  read      Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@map("notifications")
+}
+
+// ==================== PAYMENTS ====================
+model Payment {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  amount        Decimal  @db.Decimal(10, 2)
+  currency      String   @default("USD")
+  status        PaymentStatus @default(PENDING)
+  provider      PaymentProvider @default(STRIPE)
+  providerId    String?  // Stripe/PayPal transaction ID
+
+  plan          Plan?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("payments")
+}
+
+// ==================== API KEYS ====================
+model ApiKey {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name      String
+  key       String   @unique
+  lastUsed  DateTime?
+  expiresAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@map("api_keys")
+}
+
+// ==================== AUDIT LOGS ====================
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  action    String
+  entity    String
+  entityId  String?
+  details   Json?
+  ip        String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+
+  @@map("audit_logs")
+}
+
+// ==================== COUPONS ====================
+model Coupon {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  description String?
+  discount    Int      // percentage
+  maxUses     Int?
+  usedCount   Int      @default(0)
+  expiresAt   DateTime?
+  active      Boolean  @default(true)
+
+  createdAt   DateTime @default(now())
+
+  @@map("coupons")
+}
+
+// ==================== ENUMS ====================
+enum UserRole {
+  USER
+  ADMIN
+  SUPERADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  PENDING
+  DELETED
+}
+
+enum Plan {
+  FREE
+  STARTER
+  PRO
+  BUSINESS
+  ENTERPRISE
+}
+
+enum SessionType {
+  ACCESS
+  REFRESH
+}
+
+enum ProjectStatus {
+  IDLE
+  BUILDING
+  DEPLOYED
+  FAILED
+  SUSPENDED
+}
+
+enum SourceType {
+  GIT
+  ZIP
+  CLI
+}
+
+enum Framework {
+  HTML
+  CSS
+  JAVASCRIPT
+  REACT
+  NEXTJS
+  VUE
+  ANGULAR
+  NODEJS
+  EXPRESS
+  PYTHON
+  PHP
+  ASTRO
+  SVELTE
+  REMIX
+  VITE
+}
+
+enum DeploymentStatus {
+  PENDING
+  BUILDING
+  DEPLOYED
+  FAILED
+  CANCELLED
+  ROLLED_BACK
+}
+
+enum DomainType {
+  SUBDOMAIN
+  CUSTOM
+}
+
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+  DEPLOYMENT
+  BILLING
+  SECURITY
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+enum PaymentProvider {
+  STRIPE
+  PAYPAL
+  ECOCASH
+  PAYNOW
+  VISA
+  MASTERCARD
+}
