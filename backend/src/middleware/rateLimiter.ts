@@ -10,7 +10,7 @@ export const apiLimiter = rateLimit({
   message: { error: 'Too many requests, please try again later.' },
   store: {
     // Custom Redis store would go here
-    incr: async (key) => {
+    incr: async (key: string) => {
       const multi = redis.multi();
       multi.incr(key);
       multi.pexpire(key, 15 * 60 * 1000);
@@ -20,8 +20,8 @@ export const apiLimiter = rateLimit({
         resetTime: new Date(Date.now() + 15 * 60 * 1000)
       };
     },
-    decrement: (key) => redis.decr(key),
-    resetKey: (key) => redis.del(key),
+    decrement: (key: string) => redis.decr(key),
+    resetKey: (key: string) => redis.del(key),
   } as any,
 });
 
