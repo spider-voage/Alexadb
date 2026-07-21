@@ -2,7 +2,7 @@ import { Router } from 'express';
 import * as analyticsController from '../controllers/analyticsController';
 import { authenticate } from '../middleware/auth';
 
-const router = Router();
+const router: Router = Router();
 
 router.use(authenticate);
 
