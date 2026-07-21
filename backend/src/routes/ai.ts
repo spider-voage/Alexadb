@@ -2,7 +2,7 @@ import { Router } from 'express';
 import * as aiController from '../controllers/aiController';
 import { authenticate } from '../middleware/auth';
 
-const router = Router();
+const router: Router = Router();
 
 router.use(authenticate);
 
