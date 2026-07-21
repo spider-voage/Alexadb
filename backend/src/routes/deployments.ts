@@ -3,7 +3,7 @@ import * as deploymentController from '../controllers/deploymentController';
 import { authenticate } from '../middleware/auth';
 import { deployLimiter } from '../middleware/rateLimiter';
 
-const router = Router({ mergeParams: true });
+const router: Router = Router({ mergeParams: true });
 
 router.use(authenticate);
 
