@@ -6,7 +6,7 @@ import { Plan } from '@prisma/client';
 // This is a placeholder implementation with clear integration points.
 
 export class PaymentService {
-  static PLANS = {
+  static PLANS: Record<Plan, { price: number | null; name: string }> = {
     FREE: { price: 0, name: 'Free' },
     STARTER: { price: 8, name: 'Starter' },
     PRO: { price: 20, name: 'Pro' },
