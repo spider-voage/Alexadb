@@ -40,7 +40,7 @@ export class PaymentService {
     const payment = await prisma.payment.create({
       data: {
         userId,
-        amount: planInfo.price,
+        amount: planInfo.price ?? 0,
         currency: 'USD',
         status: 'PENDING',
         provider: 'STRIPE',
