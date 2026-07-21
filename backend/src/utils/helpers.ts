@@ -54,7 +54,7 @@ export const generateSlug = (name: string): string => {
 };
 
 export const getPlanLimits = (plan: Plan) => {
-  const limits = {
+  const limits: Record<Plan, { projects: number; storage: number; bandwidth: number }> = {
     FREE: { projects: 5, storage: 2 * 1024 * 1024 * 1024, bandwidth: 25 * 1024 * 1024 * 1024 },
     STARTER: { projects: 15, storage: 20 * 1024 * 1024 * 1024, bandwidth: 150 * 1024 * 1024 * 1024 },
     PRO: { projects: 50, storage: 100 * 1024 * 1024 * 1024, bandwidth: 1024 * 1024 * 1024 * 1024 },
