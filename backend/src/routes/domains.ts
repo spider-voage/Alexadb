@@ -2,7 +2,7 @@ import { Router } from 'express';
 import * as domainController from '../controllers/domainController';
 import { authenticate } from '../middleware/auth';
 
-const router = Router({ mergeParams: true });
+const router: Router = Router({ mergeParams: true });
 
 router.use(authenticate);
 
