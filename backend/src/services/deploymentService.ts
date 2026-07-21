@@ -205,7 +205,7 @@ export class DeploymentService {
 
     return this.createDeployment(userId, projectId, {
       commitMessage: `Redeploy: ${deployment.commitMessage}`,
-      commitSha: deployment.commitSha,
+      commitSha: deployment.commitSha ?? undefined,
     });
   }
 }
