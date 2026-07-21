@@ -78,6 +78,25 @@ app.use('/api/ai', aiRoutes);
 // Uploads
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
+// Root route
+app.get('/', (req, res) => {
+  res.json({
+    name: 'AlexaDB API',
+    version: '1.0.0',
+    status: 'running',
+    endpoints: {
+      health: '/health',
+      auth: '/api/auth',
+      projects: '/api/projects',
+      analytics: '/api/analytics',
+      notifications: '/api/notifications',
+      payments: '/api/payments',
+      admin: '/api/admin',
+      ai: '/api/ai',
+    }
+  });
+});
+
 // Error handling
 app.use(notFound);
 app.use(errorHandler);
