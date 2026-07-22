@@ -10,7 +10,7 @@ import path from 'path';
 
 import { prisma } from './config/database';
 import { logger } from './config/logger';
-import { errorHandler, notFound } from './middleware/errorHandler';
+import { errorHandler } from './middleware/errorHandler';
 import { apiLimiter } from './middleware/rateLimiter';
 import { setupWebSocket } from './websocket/socket';
 
@@ -46,7 +46,7 @@ app.use(helmet({
 }));
 
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: process.env.FRONTEND_URL || '*',
   credentials: true,
 }));
 
@@ -78,28 +78,17 @@ app.use('/api/ai', aiRoutes);
 // Uploads
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Root route
-app.get('/', (req, res) => {
-  res.json({
-    name: 'AlexaDB API',
-    version: '1.0.0',
-    status: 'running',
-    endpoints: {
-      health: '/health',
-      auth: '/api/auth',
-      projects: '/api/projects',
-      analytics: '/api/analytics',
-      notifications: '/api/notifications',
-      payments: '/api/payments',
-      admin: '/api/admin',
-      ai: '/api/ai',
-    }
-  });
+// Serve frontend static files
+const publicPath = path.join(__dirname, 'public');
+app.use(express.static(publicPath));
+
+// SPA fallback: serve index.html for any non-API route
+app.get('*', (req, res) => {
+  res.sendFile(path.join(publicPath, 'index.html'));
 });
 
-// Error handling
-app.use(notFound);
-app.use(errorHandler);
+// Error handling (only for API routes)
+app.use('/api', errorHandler);
 
 // Graceful shutdown
 const gracefulShutdown = async (signal: string) => {
@@ -125,7 +114,7 @@ process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 const PORT = process.env.PORT || 5000;
 
 httpServer.listen(Number(PORT), '0.0.0.0', () => {
-  logger.info(`🚀 AlexaDB API server running on port ${PORT}`);
+  logger.info(`🚀 AlexaDB server running on port ${PORT}`);
   logger.info(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
 });
 
