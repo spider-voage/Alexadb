@@ -1,14 +1,20 @@
 services:
   - type: web
-    name: spiderdb
-    runtime: node
+    name: alexadb
+    runtime: docker
     plan: free
-    buildCommand: npm install
-    startCommand: node server.js
     envVars:
       - key: NODE_ENV
         value: production
+      - key: PORT
+        value: 3000
+      - key: APP_URL
+        value: https://alexadb.onrender.com
       - key: JWT_SECRET
         generateValue: true
-      - key: DB_PATH
-        value: /tmp/spiderdb.sqlite
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: GOOGLE_CALLBACK_URL
+        value: https://alexadb.onrender.com/api/auth/google/callback

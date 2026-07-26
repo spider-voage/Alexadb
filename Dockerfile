@@ -1,26 +1,9 @@
-FROM node:20-slim
-
-# Install build tools for sqlite3 native module
-RUN apt-get update && apt-get install -y python3 make g++     && rm -rf /var/lib/apt/lists/*
-
+FROM node:18-alpine
 WORKDIR /app
-
-# Copy package files first for layer caching
 COPY package*.json ./
-
-# Use npm install (not ci) so it works with or without lockfile
-RUN npm install --production
-
-# Copy app files
+RUN npm ci --only=production
 COPY . .
-
-# Create data directory for SQLite
-RUN mkdir -p /data && chmod 755 /data
-
-ENV NODE_ENV=production
-ENV PORT=3000
-ENV DB_PATH=/data/spiderdb.sqlite
-
+RUN mkdir -p public/uploads
 EXPOSE 3000
-
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 CMD node -e "require('http').get('http://localhost:3000/api/health', (r) => r.statusCode === 200 ? process.exit(0) : process.exit(1))"
 CMD ["node", "server.js"]
