@@ -1,21 +1,3 @@
-# AlexaDB v3.0 — Premium Cloud Database Platform
-
-A futuristic dark-themed cloud database platform.
-
-## Quick Start
-
-```bash
-npm install
-npm run setup
-npm start
-
-cd ~/Alexadb
-
-# Create missing directories
-mkdir -p utils templates/emails scripts docs public/uploads
-
-# 1. utils/helpers.js
-cat > utils/helpers.js << 'EOF'
 const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 

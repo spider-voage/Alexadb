@@ -1,20 +1,22 @@
 services:
   - type: web
     name: alexadb
-    runtime: docker
-    plan: free
+    runtime: node
+    plan: starter
+    buildCommand: npm install
+    startCommand: node server.js
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 3000
-      - key: APP_URL
-        value: https://alexadb.onrender.com
+      - key: DB_PATH
+        value: /tmp/alexadb.sqlite
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_REFRESH_SECRET
         generateValue: true
       - key: SESSION_SECRET
         generateValue: true
-      - key: GOOGLE_CALLBACK_URL
-        value: https://alexadb.onrender.com/api/auth/google/callback
+      - key: APP_URL
+        value: https://alexadb.onrender.com
